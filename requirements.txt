@@ -4,8 +4,7 @@ flask-bcrypt==1.0.1
 PyJWT==2.8.0
 pymongo==4.5.0
 ase==3.22.1
-pymatgen==2023.10.11
-torch==2.1.0
+torch==2.9.0
 numpy==1.24.3
 python-dotenv==1.0.0
 gunicorn==21.2.0
