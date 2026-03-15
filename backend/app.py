@@ -591,5 +591,8 @@ def root():
 # RUN SERVER
 # ==============================
 if __name__ == "__main__":
-    print("\n🚀 Starting Flask server at http://localhost:5000")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    print(f"\n🚀 Starting Flask server at http://0.0.0.0:{port}")
+    print(f"🔧 Debug mode: {debug_mode}")
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
