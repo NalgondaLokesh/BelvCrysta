@@ -242,25 +242,26 @@ const Home: React.FC = () => {
               return (
                 <div
                   key={index}
-                  className={`bg-black/40 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-neon-purple/20 hover:border-neon-cyan/40 transition-all duration-500 group hover:transform hover:scale-105 transition-all duration-1000 delay-${index * 200} ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}
+                  className="relative bg-black/40 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-neon-purple/20 hover:border-neon-cyan/40 transition-all duration-500 group hover:transform hover:scale-105"
                 >
                   {/* Gradient Background */}
-                  <div className={`absolute inset-0 bg-gradient-to-br from-neon-purple/20 via-neon-pink/20 to-neon-cyan/20 opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/20 via-neon-pink/20 to-neon-cyan/20 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
                   
-                  {/* Icon */}
-                  <div className="flex items-start space-x-2 sm:space-x-3">
+                  <div className="flex items-start space-x-2 sm:space-x-3 relative z-10">
+                    {/* Icon */}
                     <div className="w-6 h-6 sm:w-8 sm:h-8 bg-neon-gradient rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                       <Icon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                     </div>
                   
-                  {/* Content */}
-                  <div className="relative z-10">
+                    {/* Content */}
+                    <div className="flex-1">
                       <h3 className="text-xs sm:text-sm font-semibold text-white mb-1 group-hover:text-neon-cyan transition-colors duration-300">
                         {capability.title}
                       </h3>
                       <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mb-2">
                         {capability.description}
                       </p>
+                    </div>
                   </div>
 
                   {/* Hover Effect */}
