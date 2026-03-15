@@ -262,7 +262,7 @@
 //   const [history, setHistory] = useState<ModelHistory[]>([]);
 //   const [error, setError] = useState<string | null>(null);
 //   const [loading, setLoading] = useState(true);
-//   const API_URL = "http://localhost:5000/api";
+//   const API_URL = API_ENDPOINTS.HISTORY.substring(0, API_ENDPOINTS.HISTORY.lastIndexOf('/'));
 
 //   useEffect(() => {
 //     const fetchHistory = async () => {
@@ -418,6 +418,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Eye, Download, AlertCircle, X } from "lucide-react";
+import { API_ENDPOINTS } from "../config/api";
 
 interface ModelHistory {
   _id: string;
@@ -448,7 +449,7 @@ const History: React.FC = () => {
   const [selectedStructure, setSelectedStructure] = useState<ModelHistory | null>(null);
   const [viewerLoaded, setViewerLoaded] = useState(false);
   const viewerRef = useRef<HTMLDivElement | null>(null);
-  const API_URL = "http://localhost:5000/api";
+  const API_URL = API_ENDPOINTS.HISTORY.substring(0, API_ENDPOINTS.HISTORY.lastIndexOf('/'));
 
   // Load 3Dmol.js library
   useEffect(() => {
@@ -485,7 +486,7 @@ const History: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`${API_URL}/history?token=${token}`);
+        const response = await fetch(`${API_ENDPOINTS.HISTORY}?token=${token}`);
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
         const data = await response.json();
         if (Array.isArray(data.history)) {

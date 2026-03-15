@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Sparkles, Eye, EyeOff } from "lucide-react";
+import { API_ENDPOINTS } from "../config/api";
 
 const Signup: React.FC = () => {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
@@ -17,7 +18,7 @@ const Signup: React.FC = () => {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/signup", {
+      const res = await fetch(API_ENDPOINTS.SIGNUP, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

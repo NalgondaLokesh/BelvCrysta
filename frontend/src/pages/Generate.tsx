@@ -4,7 +4,6 @@ import {
   Download, 
   Loader2, 
   Info, 
-  FlaskConical,
   AlertCircle,
   CheckCircle2,
   Plus,
@@ -15,6 +14,7 @@ import {
   Code,
   Database
 } from 'lucide-react';
+import { API_ENDPOINTS } from '../config/api';
 
 // Type definitions
 interface LatticeParameters {
@@ -95,7 +95,7 @@ const Generate: React.FC = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerInstanceRef = useRef<any>(null);
 
-  const API_URL = 'http://localhost:5000/api';
+  // const API_URL = API_ENDPOINTS.GENERATE.substring(0, API_ENDPOINTS.GENERATE.lastIndexOf('/'));
 
   const defaultElements = [
     'H','He','Li','Be','B','C','N','O','F','Ne',
@@ -131,7 +131,7 @@ const Generate: React.FC = () => {
   useEffect(() => {
     const fetchElements = async () => {
       try {
-        const response = await fetch(`${API_URL}/elements?t=${Date.now()}`, {
+        const response = await fetch(`${API_ENDPOINTS.ELEMENTS}?t=${Date.now()}`, {
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
@@ -230,7 +230,7 @@ const Generate: React.FC = () => {
         compositionDict[c.element] = c.amount;
       });
 
-      console.log('Sending request to:', `${API_URL}/generate`);
+      console.log('Sending request to:', API_ENDPOINTS.GENERATE);
       console.log('Request data:', {
         spacegroup,
         composition: compositionDict,
@@ -243,7 +243,7 @@ const Generate: React.FC = () => {
         throw new Error('Authentication required. Please login again.');
       }
 
-      const response = await fetch(`${API_URL}/generate?t=${Date.now()}`, {
+      const response = await fetch(`${API_ENDPOINTS.GENERATE}?t=${Date.now()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
