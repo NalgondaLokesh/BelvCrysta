@@ -261,8 +261,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from pymatgen.core import Structure, Lattice
-from pymatgen.io.ase import AseAtomsAdaptor
 from pymongo import MongoClient
 import traceback
 import jwt
@@ -424,47 +422,47 @@ def decode_jwt(token):
         print("❌ Invalid JWT token:", e)
         return None
 
-def calculate_bonds(structure, max_bond_distance=3.0):
-    bonds = []
-    atoms = structure.sites
-    for i in range(len(atoms)):
-        for j in range(i + 1, len(atoms)):
-            distance = atoms[i].distance(atoms[j])
-            if distance < max_bond_distance:
-                bonds.append({'atom1': i, 'atom2': j, 'distance': float(distance)})
-    return bonds
+# def calculate_bonds(structure, max_bond_distance=3.0):
+#     bonds = []
+#     atoms = structure.sites
+#     for i in range(len(atoms)):
+#         for j in range(i + 1, len(atoms)):
+#             distance = atoms[i].distance(atoms[j])
+#             if distance < max_bond_distance:
+#                 bonds.append({'atom1': i, 'atom2': j, 'distance': float(distance)})
+#     return bonds
 
-def structure_to_xyz(structure):
-    try:
-        atoms = AseAtomsAdaptor.get_atoms(structure)
-        xyz_str = f"{len(atoms)}\n\n"
-        for atom in atoms:
-            xyz_str += f"{atom.symbol} {atom.position[0]:.6f} {atom.position[1]:.6f} {atom.position[2]:.6f}\n"
-        return xyz_str
-    except Exception as e:
-        print(f"Error converting to XYZ: {e}")
-        return None
+# def structure_to_xyz(structure):
+#     try:
+#         atoms = AseAtomsAdaptor.get_atoms(structure)
+#         xyz_str = f"{len(atoms)}\n\n"
+#         for atom in atoms:
+#             xyz_str += f"{atom.symbol} {atom.position[0]:.6f} {atom.position[1]:.6f} {atom.position[2]:.6f}\n"
+#         return xyz_str
+#     except Exception as e:
+#         print(f"Error converting to XYZ: {e}")
+#         return None
 
 # ==============================
 # GENERATION LOGIC
 # ==============================
-def generate_structure(spacegroup_idx, comp_dict, num_atoms=8, temperature=1.0):
-    if not model_loaded:
-        raise Exception("Model not loaded. Please check model path and restart the server.")
-    print(f"🧠 Generating structure with spacegroup {spacegroup_idx} and composition {comp_dict}")
-    z = torch.randn((1, LATENT_DIM)) * temperature
-    sg_idx = torch.tensor([spacegroup_idx], dtype=torch.long)
-    with torch.no_grad():
-        lat_pred, frac_pred, species_logits = model.dec(z, sg_idx)
-    lat = lat_pred.detach().numpy()[0]
-    frac = frac_pred.detach().numpy()[0]
-    elements = list(comp_dict.keys())
-    species_symbols = [elements[i % len(elements)] for i in range(num_atoms)]
-    lattice = Lattice(lat)
-    sites = [{'species': [{"element": el, "occu": 1}], 'abc': frac[i].tolist()} for i, el in enumerate(species_symbols)]
-    structure = Structure.from_dict({'lattice': lattice.as_dict(), 'sites': sites, 'charge': 0})
-    print("✅ Structure generated successfully.")
-    return structure
+# def generate_structure(spacegroup_idx, comp_dict, num_atoms=8, temperature=1.0):
+#     if not model_loaded:
+#         raise Exception("Model not loaded. Please check model path and restart the server.")
+#     print(f"🧠 Generating structure with spacegroup {spacegroup_idx} and composition {comp_dict}")
+#     z = torch.randn((1, LATENT_DIM)) * temperature
+#     sg_idx = torch.tensor([spacegroup_idx], dtype=torch.long)
+#     with torch.no_grad():
+#         lat_pred, frac_pred, species_logits = model.dec(z, sg_idx)
+#     lat = lat_pred.detach().numpy()[0]
+#     frac = frac_pred.detach().numpy()[0]
+#     elements = list(comp_dict.keys())
+#     species_symbols = [elements[i % len(elements)] for i in range(num_atoms)]
+#     lattice = Lattice(lat)
+#     sites = [{'species': [{"element": el, "occu": 1}], 'abc': frac[i].tolist()} for i, el in enumerate(species_symbols)]
+#     structure = Structure.from_dict({'lattice': lattice.as_dict(), 'sites': sites, 'charge': 0})
+#     print("✅ Structure generated successfully.")
+#     return structure
 
 # ==============================
 # ROUTES
