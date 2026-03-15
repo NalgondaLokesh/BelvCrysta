@@ -99,7 +99,7 @@ const Visualization: React.FC<VisualizationProps> = ({ structure, formula }) => 
 
     // helper color functions (kept from your original code)
     const lightenColor = (color: string, percent: number) => {
-      const num = parseInt(color.replace('#', ''), 16);
+      const num = parseInt(color.replace(/#/, ''), 16);
       const amt = Math.round(2.55 * percent);
       const R = Math.min(255, (num >> 16) + amt);
       const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
@@ -108,7 +108,7 @@ const Visualization: React.FC<VisualizationProps> = ({ structure, formula }) => 
     };
 
     const darkenColor = (color: string, percent: number) => {
-      const num = parseInt(color.replace('#', ''), 16);
+      const num = parseInt(color.replace(/#/, ''), 16);
       const amt = Math.round(2.55 * percent);
       const R = Math.max(0, (num >> 16) - amt);
       const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
