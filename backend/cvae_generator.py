@@ -17,6 +17,25 @@ from datetime import datetime
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
+
+# Atomic radii (in Angstroms) for minimum distance calculations
+ATOMIC_RADII = {
+    'H': 0.31, 'He': 0.28, 'Li': 1.28, 'Be': 0.96, 'B': 0.84, 'C': 0.76, 'N': 0.71, 'O': 0.66, 'F': 0.57, 'Ne': 0.58,
+    'Na': 1.66, 'Mg': 1.41, 'Al': 1.21, 'Si': 1.11, 'P': 1.07, 'S': 1.05, 'Cl': 1.02, 'Ar': 1.06,
+    'K': 2.03, 'Ca': 1.76, 'Sc': 1.70, 'Ti': 1.60, 'V': 1.53, 'Cr': 1.39, 'Mn': 1.39, 'Fe': 1.32, 'Co': 1.26, 'Ni': 1.24,
+    'Cu': 1.32, 'Zn': 1.22, 'Ga': 1.22, 'Ge': 1.20, 'As': 1.19, 'Se': 1.16, 'Br': 1.14, 'Kr': 1.16,
+    'Rb': 2.20, 'Sr': 1.95, 'Y': 1.80, 'Zr': 1.71, 'Nb': 1.64, 'Mo': 1.54, 'Tc': 1.47, 'Ru': 1.46, 'Rh': 1.42, 'Pd': 1.39,
+    'Ag': 1.45, 'Cd': 1.44, 'In': 1.42, 'Sn': 1.39, 'Sb': 1.39, 'Te': 1.38, 'I': 1.39, 'Xe': 1.40
+}
+
+def get_minimum_distance(element1, element2):
+    """Calculate minimum allowed distance between two atoms based on atomic radii"""
+    radius1 = ATOMIC_RADII.get(element1, 1.0)  # Default to 1.0 Å for unknown elements
+    radius2 = ATOMIC_RADII.get(element2, 1.0)
+    # Minimum distance = sum of radii * 0.8 (allowing some compression)
+    return (radius1 + radius2) * 0.8
 
 class CVAEGenerator:
     """Advanced crystal structure generator using trained CVAE model"""
@@ -97,8 +116,10 @@ class CVAEGenerator:
         # For simplicity, use the diagonal as lattice parameters
         a, b, c = np.abs(np.diag(lat))
         
-        # Ensure positive lattice parameters
-        a, b, c = max(a, 1.0), max(b, 1.0), max(c, 1.0)
+        # Ensure positive and physically reasonable lattice parameters
+        # Scale cell dimensions to prevent atom overlap
+        base_length = max(5.0 + (num_atoms * 0.2), 8.0)
+        a, b, c = max(a, base_length), max(b, base_length), max(c, base_length)
         a, b, c = min(a, 50.0), min(b, 50.0), min(c, 50.0)  # Reasonable bounds
         
         # Create lattice (assuming cubic for simplicity)
@@ -109,10 +130,59 @@ class CVAEGenerator:
         species_symbols = [elements[i % len(elements)] for i in species_indices]
         
         # Use the fractional coordinates for the requested number of atoms
-        frac_coords = frac_pred[:num_atoms]
+        frac_coords = frac[:num_atoms]
         
         # Ensure fractional coordinates are in [0, 1]
         frac_coords = frac_coords % 1.0
+        
+        # Convert fractional coordinates to Cartesian positions for overlap resolution
+        positions = frac_coords * np.array([a, b, c])
+        
+        # Run hard-sphere repulsion relaxation to resolve overlapping atom coordinates
+        lengths = np.array([a, b, c])
+        for iteration in range(100):
+            overlap_found = False
+            for i in range(num_atoms):
+                for j in range(i + 1, num_atoms):
+                    pos1 = positions[i]
+                    pos2 = positions[j]
+                    
+                    min_dist = get_minimum_distance(species_symbols[i], species_symbols[j])
+                    current_dist = np.linalg.norm(pos1 - pos2)
+                    
+                    if current_dist < min_dist:
+                        overlap_found = True
+                        if current_dist < 1e-2:
+                            direction = np.random.normal(0, 1, 3)
+                            direction /= np.linalg.norm(direction)
+                        else:
+                            direction = (pos2 - pos1) / current_dist
+                        
+                        shift_amount = (min_dist - current_dist) / 2.0 + 0.05
+                        positions[i] -= direction * shift_amount
+                        positions[j] += direction * shift_amount
+            
+            # Clamp Cartesian positions to stay within unit cell bounds [0.05 * lengths, 0.95 * lengths]
+            # inside the loop, so that any overlaps introduced by clamping are resolved in subsequent iterations
+            for i in range(num_atoms):
+                positions[i] = np.clip(positions[i], 0.05 * lengths, 0.95 * lengths)
+                
+            if not overlap_found:
+                # Double-check that clamping did not re-introduce any overlaps
+                clamping_overlap = False
+                for i in range(num_atoms):
+                    for j in range(i + 1, num_atoms):
+                        d = np.linalg.norm(positions[i] - positions[j])
+                        if d < get_minimum_distance(species_symbols[i], species_symbols[j]):
+                            clamping_overlap = True
+                            break
+                    if clamping_overlap:
+                        break
+                if not clamping_overlap:
+                    break
+                    
+        # Update fractional coords
+        frac_coords = positions / lengths
         
         # Create sites
         sites = []
@@ -151,9 +221,13 @@ def create_cvae_generator():
     """Create and return a CVAE generator instance"""
     # Try to find a trained model
     model_paths = [
+        "./model/checkpoints/cvae_best.pt",
+        "../model/checkpoints/cvae_best.pt",
+        "backend/model/checkpoints/cvae_best.pt",
+        "../backend/model/checkpoints/cvae_best.pt",
         "./checkpoints/cvae_best.pt",
-        "../backend/checkpoints/cvae_best.pt",
         "../checkpoints/cvae_best.pt",
+        "../backend/checkpoints/cvae_best.pt",
         "./cvae_best.pt"
     ]
     

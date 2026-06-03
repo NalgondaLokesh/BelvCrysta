@@ -8,8 +8,17 @@ import random
 import numpy as np
 import json
 import jwt
+import sys
 from bson import json_util, ObjectId
 from dotenv import load_dotenv
+
+# Reconfigure stdout and stderr to UTF-8
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
+
+# Add parent directory of this file to sys.path to enable imports from backend
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from cvae_generator import create_cvae_generator
 
 # Load environment variables from .env file
 load_dotenv()
@@ -267,15 +276,18 @@ def comprehensive_structure_validation(formula, spacegroup, lattice_params, atom
 # MongoDB connection configuration
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://crystaladmin:crystalgen@cluster0.izeivgm.mongodb.net/?retryWrites=true&w=majority")
 DB_NAME = "crystalgen_db"
-COLLECTION_NAME = "models"
+COLLECTION_NAME = "structures"
 
-# Create MongoDB client with retry configuration
-client = MongoClient(MONGO_URI, 
-                    retryWrites=True, 
-                    connectTimeoutMS=5000,
-                    serverSelectionTimeoutMS=5000)
+client = None
+db = None
+models = None
 
 try:
+    print("🔌 Connecting to Crystal MongoDB...")
+    client = MongoClient(MONGO_URI, 
+                        retryWrites=True, 
+                        connectTimeoutMS=5000,
+                        serverSelectionTimeoutMS=5000)
     # Test the connection
     client.admin.command('ping')
     db = client[DB_NAME]
@@ -288,132 +300,84 @@ try:
     
 except Exception as e:
     print("❌ Error connecting to MongoDB:", str(e))
-    raise Exception("Failed to connect to MongoDB. Please check your connection string and ensure MongoDB is running.")
+    print("⚠️ Running in offline/mock mode - database saves will be skipped")
+    db = None
+    models = None
+
+# Initialize the CVAE generator
+generator = create_cvae_generator()
 
 crystal_bp = Blueprint('crystal', __name__)
 SECRET_KEY = "crystal_secret"
 
-# Dummy placeholder generation logic (replace with your CVAE model)
-# def generate_crystal_structure(formula, spacegroup, composition, num_atoms, temperature):
-#     print(f"\nGenerating structure for {formula} with {num_atoms} atoms at T={temperature}")
-    
-#     # Calculate basic parameters based on composition and num_atoms
-#     base_length = max(5.0 + (num_atoms * 0.2), 8.0)  # Increased scaling and minimum size
-    
-#     # Calculate volume based on the unit cell parameters
-#     volume = base_length ** 3  # Cubic approximation for demo
-    
-#     lattice_params = {
-#         "a": float(base_length),
-#         "b": float(base_length),
-#         "c": float(base_length),
-#         "alpha": float(90.0),
-#         "beta": float(90.0),
-#         "gamma": float(90.0),
-#         "volume": float(volume)
-#     }
-    
-#     print(f"Lattice parameters: a=b=c={base_length:.3f}, volume={volume:.3f}")
-    
-#     # Generate atom positions based on composition
-#     atoms = []
-#     total_atoms = sum(int(amt) for amt in composition.values())
-#     print(f"Generating positions for {total_atoms} atoms")
-    
-#     # Improved grid system with better spacing
-#     grid_size = int(pow(total_atoms, 1/3)) + 2  # Increased grid size
-#     spacing = 0.8 / grid_size  # Reduced spacing to keep atoms within bounds
-#     offset = 0.1  # Offset from edges
-    
-#     atom_count = 0
-#     for idx, (el, amount) in enumerate(composition.items()):
-#         amount = int(amount)
-#         print(f"\nProcessing element {el} with amount {amount}")
-        
-#         for i in range(amount):
-#             # Calculate grid position with improved distribution
-#             grid_x = (atom_count % grid_size)
-#             grid_y = ((atom_count // grid_size) % grid_size)
-#             grid_z = (atom_count // (grid_size * grid_size)) % grid_size
-            
-#             # Calculate base positions with offset to avoid edges
-#             base_x = offset + (grid_x * spacing)
-#             base_y = offset + (grid_y * spacing)
-#             base_z = offset + (grid_z * spacing)
-            
-#             # Add controlled randomization
-#             rand_x = (temperature * 0.1 * (idx + 1)) % 0.1
-#             rand_y = (temperature * 0.1 * (i + 1)) % 0.1
-#             rand_z = (temperature * 0.1) % 0.1
-            
-#             # Calculate final fractional coordinates
-#             frac_x = min(max(base_x + rand_x, 0.05), 0.95)
-#             frac_y = min(max(base_y + rand_y, 0.05), 0.95)
-#             frac_z = min(max(base_z + rand_z, 0.05), 0.95)
-            
-#             # Convert to cartesian coordinates
-#             cart_x = frac_x * base_length
-#             cart_y = frac_y * base_length
-#             cart_z = frac_z * base_length
-            
-#             print(f"Atom {el} {i+1}:")
-#             print(f"  Grid:       ({grid_x}, {grid_y}, {grid_z})")
-#             print(f"  Fractional: ({frac_x:.3f}, {frac_y:.3f}, {frac_z:.3f})")
-#             print(f"  Cartesian:  ({cart_x:.3f}, {cart_y:.3f}, {cart_z:.3f}) Å")
-            
-#             atoms.append({
-#                 "element": el,
-#                 "position": [float(cart_x), float(cart_y), float(cart_z)],
-#                 "frac_coords": [float(frac_x), float(frac_y), float(frac_z)]
-#             })
-            
-#             atom_count += 1
-    
-#     # Generate XYZ data
-#     xyz_lines = [f"{len(atoms)}\n{formula}"]
-#     for atom in atoms:
-#         pos = atom["position"]
-#         xyz_lines.append(f"{atom['element']} {pos[0]:.3f} {pos[1]:.3f} {pos[2]:.3f}")
-#     xyz_data = "\n".join(xyz_lines)
-    
-#     # Generate basic CIF data
-#     cif_data = f"""data_{formula}
-# _cell_length_a {lattice_params['a']:.3f}
-# _cell_length_b {lattice_params['b']:.3f}
-# _cell_length_c {lattice_params['c']:.3f}
-# _cell_angle_alpha {lattice_params['alpha']:.1f}
-# _cell_angle_beta {lattice_params['beta']:.1f}
-# _cell_angle_gamma {lattice_params['gamma']:.1f}
-# _symmetry_space_group_name_H-M "{spacegroup}"
-# """
 
-#     return {
-#         "formula": formula,
-#         "spacegroup": int(spacegroup),
-#         "lattice_parameters": lattice_params,
-#         "atoms": atoms,
-#         "xyz_data": xyz_data,
-#         "cif_data": cif_data
-#     }
 
 def generate_crystal_structure(formula, spacegroup, composition, num_atoms, temperature):
     """
-    Generate crystal structure using enhanced dummy generator
-    
-    Args:
-        formula: Chemical formula string
-        spacegroup: Space group number
-        composition: Composition dictionary
-        num_atoms: Number of atoms
-        temperature: Generation temperature
-    
-    Returns:
-        Dictionary with structure data
+    Generate crystal structure using trained CVAE model if available,
+    otherwise fallback to the grid-based fallback generator.
     """
     print(f"\n🔬 Generating structure for {formula} with {num_atoms} atoms at T={temperature}")
     
-    # Use enhanced fallback generator
-    print("🔄 Using enhanced generator...")
+    if 'generator' in globals() and generator and generator.model_loaded:
+        try:
+            print("🤖 Using trained CVAE model for generation...")
+            structure = generator.generate_structure_cvae(
+                spacegroup_idx=spacegroup,
+                comp_dict=composition,
+                num_atoms=num_atoms,
+                temperature=temperature
+            )
+            
+            # Extract lattice parameters
+            lattice_params = {
+                "a": float(structure.lattice.a),
+                "b": float(structure.lattice.b),
+                "c": float(structure.lattice.c),
+                "alpha": float(structure.lattice.alpha),
+                "beta": float(structure.lattice.beta),
+                "gamma": float(structure.lattice.gamma),
+                "volume": float(structure.lattice.volume)
+            }
+            
+            # Extract atoms
+            atoms = []
+            for s in structure:
+                atoms.append({
+                    "element": s.specie.symbol,
+                    "position": [float(x) for x in s.coords],
+                    "frac_coords": [float(x) for x in s.frac_coords]
+                })
+                
+            # Generate XYZ data
+            xyz_lines = [f"{len(atoms)}\n{formula}"]
+            for atom in atoms:
+                pos = atom["position"]
+                xyz_lines.append(f"{atom['element']} {pos[0]:.6f} {pos[1]:.6f} {pos[2]:.6f}")
+            xyz_data = "\n".join(xyz_lines)
+            
+            # Generate CIF data
+            cif_data = structure.to(fmt="cif")
+            
+            result = {
+                "formula": formula,
+                "spacegroup": int(spacegroup),
+                "lattice_parameters": lattice_params,
+                "atoms": atoms,
+                "xyz_data": xyz_data,
+                "cif_data": cif_data
+            }
+            
+            print(f"✅ Generated {len(atoms)} atoms using CVAE model")
+            return result
+            
+        except Exception as e:
+            print(f"⚠️ CVAE generation failed: {e}. Falling back to procedural generator...")
+            import traceback
+            traceback.print_exc()
+            
+    # Fallback procedural generation
+    print("🔄 Using enhanced fallback generator...")
     structure_dict = generate_structure_fallback(spacegroup, composition, num_atoms, temperature)
     lattice_params = structure_dict['lattice_parameters']
     atoms = structure_dict['atoms']
@@ -536,6 +500,10 @@ def generate_structure_fallback(spacegroup, composition, num_atoms, temperature)
     return structure_dict
 def verify_document(doc_id):
     """Verify a document exists in MongoDB and has required fields"""
+    if models is None:
+        print("⚠️ Offline Mode: verify_document skipped")
+        return {"_id": doc_id, "offline": True}
+        
     doc = models.find_one({"_id": doc_id})
     if not doc:
         raise Exception("Document not found after save")
@@ -550,6 +518,11 @@ def verify_document(doc_id):
 
 def save_to_mongodb(username, document):
     """Save document to MongoDB with proper error handling"""
+    if models is None:
+        print("⚠️ Offline Mode: save_to_mongodb mock return")
+        import bson
+        return bson.ObjectId()
+        
     try:
         # Add timestamp if not present
         if 'timestamp' not in document:
@@ -568,7 +541,6 @@ def save_to_mongodb(username, document):
 
 
 
-@crystal_bp.route('/history/<username>', methods=['GET'])
 @crystal_bp.route('/elements', methods=['GET'])
 def get_elements():
     elements = [
@@ -690,7 +662,8 @@ def generate_model():
             print(f"❌ Error generating structure: {str(e)}")
             return jsonify({"error": f"Failed to generate structure: {str(e)}"}), 500
 
-        # 5. Save to database
+        # 5. Save to database (flattened fields + result wrapper + multiple date fields for complete compatibility)
+        now = datetime.utcnow()
         document = {
             "user_id": user_id,
             "username": username,
@@ -699,8 +672,15 @@ def generate_model():
             "composition": composition,
             "num_atoms": num_atoms,
             "temperature": temperature,
+            "lattice_parameters": result["lattice_parameters"],
+            "atoms": result["atoms"],
+            "xyz_data": result["xyz_data"],
+            "cif_data": result["cif_data"],
+            "validation_report": result.get("validation_report"),
             "result": result,
-            "timestamp": datetime.utcnow()
+            "timestamp": now,
+            "created_at": now,
+            "generated_at": now
         }
 
         try:
@@ -725,6 +705,7 @@ def generate_model():
         print(f"❌ Unexpected error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+@crystal_bp.route('/history/<username>', methods=['GET'])
 def get_history(username):
     print(f"\n=== FETCHING HISTORY FOR {username} ===")
     try:
