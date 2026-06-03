@@ -444,7 +444,7 @@ $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{lattice}} + \mathcal{L}_{\text
 ![3D Crystal Lattice Render](./screenshots/crystal_structure.png)
 
 ### History Page
-![History Log Page Mockup](https://raw.githubusercontent.com/NalgondaLokesh/BelvCrysta/main/screenshots/history_page.png)
+![History Log Page](./screenshots/history_page.png)
 
 ---
 
