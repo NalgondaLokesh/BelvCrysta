@@ -438,10 +438,10 @@ $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{lattice}} + \mathcal{L}_{\text
 ![Home Page Screenshot](./screenshots/home_page.png)
 
 ### Generation Page
-![Generation Control Panel Mockup](https://raw.githubusercontent.com/NalgondaLokesh/BelvCrysta/main/screenshots/generation_page.png)
+![Generation Control Panel](./screenshots/generation_page.png)
 
 ### Generated Crystal Structure
-![3D Crystal Lattice Render Mockup](https://raw.githubusercontent.com/NalgondaLokesh/BelvCrysta/main/screenshots/crystal_structure.png)
+![3D Crystal Lattice Render](./screenshots/generation_page.png)
 
 ### History Page
 ![History Log Page Mockup](https://raw.githubusercontent.com/NalgondaLokesh/BelvCrysta/main/screenshots/history_page.png)
