@@ -435,7 +435,7 @@ $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{lattice}} + \mathcal{L}_{\text
 ## Screenshots
 
 ### Home Page
-![Home Page Mockup](https://raw.githubusercontent.com/NalgondaLokesh/BelvCrysta/main/screenshots/home_page.png)
+![Home Page Screenshot](./screenshots/home_page.png)
 
 ### Generation Page
 ![Generation Control Panel Mockup](https://raw.githubusercontent.com/NalgondaLokesh/BelvCrysta/main/screenshots/generation_page.png)
