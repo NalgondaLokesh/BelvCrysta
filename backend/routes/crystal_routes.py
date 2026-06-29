@@ -308,7 +308,7 @@ except Exception as e:
 generator = create_cvae_generator()
 
 crystal_bp = Blueprint('crystal', __name__)
-SECRET_KEY = "crystal_secret"
+SECRET_KEY = os.getenv("SECRET_KEY", "crystal_secret")
 
 
 

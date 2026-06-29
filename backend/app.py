@@ -124,6 +124,7 @@ class CVAE(nn.Module):
 # FLASK SETUP
 # ==============================
 app = Flask(__name__)
+app.config["SECRET_KEY"] = SECRET_KEY
 CORS(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(crystal_bp, url_prefix='/api')
@@ -172,7 +173,7 @@ def get_history():
     user_id = None
     if token:
         try:
-            decoded = jwt.decode(token, "crystal_secret", algorithms=["HS256"])
+            decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             user_id = decoded.get("id")
             print(f"✅ Token decoded successfully. User ID: {user_id}")
         except jwt.ExpiredSignatureError:
