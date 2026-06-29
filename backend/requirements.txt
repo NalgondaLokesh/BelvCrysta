@@ -4,6 +4,7 @@ flask-bcrypt
 PyJWT
 pymongo[srv]
 ase
+pymatgen
 torch
 numpy
 python-dotenv

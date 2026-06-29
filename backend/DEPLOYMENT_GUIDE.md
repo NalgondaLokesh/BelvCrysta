@@ -24,7 +24,9 @@ git push origin main
 
 ### 3️⃣ Deploy on Render
 
-#### Option A: Using Render Dashboard (Recommended)
+#### Option A: Using Render Dashboard with Docker (Recommended)
+This is the recommended method because it avoids memory and dependency compilation errors with PyTorch and `pymatgen` by building inside a container.
+
 1. Go to [render.com](https://render.com)
 2. Sign up/login with your GitHub account
 3. Click "New +" → "Web Service"
@@ -32,17 +34,22 @@ git push origin main
 5. Select the `BelvCrysta` repository
 6. Configure the service:
    - **Name**: `belvcrysta-api`
-   - **Environment**: `Python 3`
-   - **Root Directory**: `backend` (if backend is in subfolder)
+   - **Language/Runtime**: `Docker`
+   - **Root Directory**: `backend`
+   - **Instance Type**: `Free`
+
+#### Option B: Native Python Environment
+*Note: This may fail on the Free tier due to memory limitations during pip package installation of PyTorch/pymatgen.*
+
+1. Go to [render.com](https://render.com)
+2. Click "New +" → "Web Service" and connect repository
+3. Configure the service:
+   - **Name**: `belvcrysta-api`
+   - **Runtime**: `Python 3`
+   - **Root Directory**: `backend`
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `gunicorn app:app`
    - **Instance Type**: `Free`
-
-#### Option B: Using render.yaml
-1. Push the `render.yaml` file to your repository
-2. In Render dashboard, click "New +" → "Web Service"
-3. Connect your repository
-4. Render will automatically detect the `render.yaml` configuration
 
 ### 4️⃣ Set Environment Variables
 In your Render service settings, add these environment variables:
